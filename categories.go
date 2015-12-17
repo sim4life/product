@@ -21,7 +21,16 @@ type Category struct {
 	children []*Category `json:"-"`
 }
 
-func PrintCategoryMap(cat_map map[int64]*Category) {
+type FlatCategory struct {
+	// ID              int
+	Category_ID     int64
+	Category_Names  []string // each item contains parents name
+	Search_Synonyms string   // all parents synonyms appended
+}
+
+type MapCategories map[int64]*Category
+
+func (cat_map MapCategories) PrintValues() {
 	// var m map[int]string
 	var keys []int64
 	for k, v := range cat_map {
@@ -36,7 +45,20 @@ func PrintCategoryMap(cat_map map[int64]*Category) {
 
 }
 
-func populateCategoryTree(cat_map map[int64]*Category) {
+func (flat_cat *FlatCategory) FlattenCategory(cat_map MapCategories) {
+
+	cat := cat_map[flat_cat.Category_ID]
+	for cat != nil {
+		flat_cat.Category_Names = append(flat_cat.Category_Names, cat.Category_Name)
+		flat_cat.Search_Synonyms += cat.Search_Synonyms + ","
+		cat = cat.parent
+	}
+	flat_cat.Search_Synonyms = strings.Trim(strings.Trim(flat_cat.Search_Synonyms, ","), " ")
+	// fmt.Printf("flat_cat is:%+v\n", flat_cat)
+	// fmt.Printf("flat_cat.Category_Names is:%q\n", flat_cat.Category_Names)
+}
+
+func populateCategoryTree(cat_map MapCategories) {
 	counter := 0
 	//finding the root of the tree
 	var root_groc_cat *Category
@@ -55,29 +77,19 @@ func populateCategoryTree(cat_map map[int64]*Category) {
 	for _, v := range cat_map {
 		parent := cat_map[v.Parent_Category_ID]
 		if parent != nil {
-			// parent.children = appendPtr(parent.children, v)
 			parent.children = append(parent.children, v)
 			v.parent = parent
-			/*
-				if *parent.children == nil {
-					// parent.children = *[]Category{*v}
-					parent.children = v
-					v.parent = parent
-				} else {
-					*parent.children = append(*parent.children, *v)
-					v.parent = parent
-				}*/
 		}
 	}
 }
 
-func ParseCategoriesFile(scanner *bufio.Scanner) interface{} {
+func ParseCategoriesFile(scanner *bufio.Scanner) PrintStructVals {
 	fmt.Println("fun fun")
 
 	counter := 1
 	cat_id := int64(0)
 	category := &Category{ID: counter}
-	cat_map := make(map[int64]*Category)
+	cat_map := make(MapCategories)
 
 	for scanner.Scan() {
 		str := strings.Split(scanner.Text(), "|")
@@ -115,11 +127,12 @@ func ParseCategoriesFile(scanner *bufio.Scanner) interface{} {
 	}
 
 	populateCategoryTree(cat_map)
-	PrintCategoryMap(cat_map)
+	// cat_map.PrintValues()
 
 	if err := scanner.Err(); err != nil {
 		fmt.Println(err)
-		return err
+		//TODO: return proper error
+		return nil //err
 	}
 
 	return cat_map
