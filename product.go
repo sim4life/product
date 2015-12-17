@@ -9,6 +9,7 @@ import (
 	//"log"
 	// "os"
 	"encoding/json"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -51,7 +52,14 @@ func (products Products) PrintValues() {
 
 func (products Products) PrintJSON() {
 	if productsJSON, err := json.MarshalIndent(products, "", "   "); err == nil {
-		fmt.Println("JSON is: ", string(productsJSON))
+		// fmt.Println("JSON is: ", string(productsJSON))
+		jsonFile, err := os.Create("./products.json")
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer jsonFile.Close()
+
+		jsonFile.Write(productsJSON)
 	}
 }
 
@@ -64,8 +72,12 @@ func (products Products) FlattenGroceriesCategories(cat_map MapCategories) {
 			flat_groc_cat := &FlatCategory{Category_ID: groc_cat_id}
 			flat_groc_cat.FlattenCategory(cat_map)
 
-			products[i].Groceries_Categories = append(prod.Groceries_Categories, flat_groc_cat.Category_Names)
-			products[i].Groceries_Search_Synonyms = append(prod.Groceries_Search_Synonyms, flat_groc_cat.Search_Synonyms)
+			if len(flat_groc_cat.Category_Names) > 0 {
+				products[i].Groceries_Categories = append(products[i].Groceries_Categories, flat_groc_cat.Category_Names)
+			}
+			if len(flat_groc_cat.Search_Synonyms) > 0 {
+				products[i].Groceries_Search_Synonyms = append(products[i].Groceries_Search_Synonyms, flat_groc_cat.Search_Synonyms)
+			}
 		}
 		// fmt.Printf("---product is:%+v\n", prod)
 		// fmt.Printf("prod.Groceries_Categories is:%q\n", prod.Groceries_Categories)
@@ -84,6 +96,20 @@ func (products Products) FlattenGroceriesCategories(cat_map MapCategories) {
 func (products Products) FlattenIdeasCategories(cat_map MapCategories) {
 	fmt.Println("In Products ==> FlattenIdeasCategories\n\n")
 	fmt.Printf("len(products) is: %d and len(cat_map) is: %d\n", len(products), len(cat_map))
+	for i, prod := range products {
+		for _, idea_cat_id := range prod.Ideas_Category_ID {
+			flat_idea_cat := &FlatCategory{Category_ID: idea_cat_id}
+			flat_idea_cat.FlattenCategory(cat_map)
+
+			if len(flat_idea_cat.Category_Names) > 0 {
+				products[i].Ideas_Categories = append(products[i].Ideas_Categories, flat_idea_cat.Category_Names)
+			}
+			if len(flat_idea_cat.Search_Synonyms) > 0 {
+				products[i].Ideas_Search_Synonyms = append(products[i].Ideas_Search_Synonyms, flat_idea_cat.Search_Synonyms)
+			}
+		}
+
+	}
 }
 
 func setCurrentSliceField(product *Product, sliceField *SliceField) {

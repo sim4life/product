@@ -50,12 +50,12 @@ func (flat_cat *FlatCategory) FlattenCategory(cat_map MapCategories) {
 	cat := cat_map[flat_cat.Category_ID]
 	for cat != nil {
 		flat_cat.Category_Names = append(flat_cat.Category_Names, cat.Category_Name)
-		flat_cat.Search_Synonyms += cat.Search_Synonyms + ","
+		if cat.Search_Synonyms != "" {
+			flat_cat.Search_Synonyms += cat.Search_Synonyms + ","
+		}
 		cat = cat.parent
 	}
 	flat_cat.Search_Synonyms = strings.Trim(strings.Trim(flat_cat.Search_Synonyms, ","), " ")
-	// fmt.Printf("flat_cat is:%+v\n", flat_cat)
-	// fmt.Printf("flat_cat.Category_Names is:%q\n", flat_cat.Category_Names)
 }
 
 func populateCategoryTree(cat_map MapCategories) {
@@ -113,21 +113,21 @@ func ParseCategoriesFile(scanner *bufio.Scanner) PrintStructVals {
 			} else {
 				// if counter%100 == 0 {
 				fmt.Println("{\"index\" : {\"_id\" :", counter, ", \"_index\":\"policereport\", \"_type\":\"crimestat\"}}")
-				fmt.Println("%+v\nFinish----------", category)
+				// fmt.Printf("%+v\nFinish----------\n", category)
 				// }
 
 				cat_map[cat_id] = category
 				counter++
 				category = &Category{ID: counter}
 
-				fmt.Println("%+v----------Init", category)
+				// fmt.Printf("%+v----------Init\n", category)
 
 			}
 		}
 	}
 
 	populateCategoryTree(cat_map)
-	// cat_map.PrintValues()
+	cat_map.PrintValues()
 
 	if err := scanner.Err(); err != nil {
 		fmt.Println(err)
